@@ -1,1 +1,33 @@
-"Server/.env" 
+# Node modules
+client/node_modules/
+Server/node_modules/
+
+# Environment variables
+Server/.env
+client/.env
+.env
+
+# Build output
+client/.next/
+client/out/
+client/dist/
+Server/dist/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE-specific
+.vscode/
+.idea/
+
+# lock files (optional, if you're only using one lock file manager)
+pnpm-lock.yaml
+yarn.lock

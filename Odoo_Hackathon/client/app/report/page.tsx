@@ -15,11 +15,14 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 export default function ReportPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
-    location: "",
+    latitude: "",
+    longitude: "",
+    address: "",
     image_url: "",
   })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -27,7 +30,7 @@ export default function ReportPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-  const router = useRouter()
+  const [gettingLocation, setGettingLocation] = useState(false)
 
   const categories = ["Potholes", "Streetlights", "Garbage", "Water", "Traffic", "Other"]
 
@@ -36,7 +39,7 @@ export default function ReportPage() {
     if (!token) {
       router.push("/login")
     }
-  }, [])
+  }, [router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -66,7 +69,7 @@ export default function ReportPage() {
       const formDataUpload = new FormData()
       formDataUpload.append("file", selectedFile)
 
-      const response = await fetch("http://localhost:8000/issues/upload-image", {
+      const response = await fetch("http://localhost:8000/api/upload-image", {
         method: "POST",
         body: formDataUpload,
       })
@@ -98,10 +101,11 @@ export default function ReportPage() {
       }
 
       const token = localStorage.getItem("token")
-      const response = await fetch("http://localhost:8000/issues/issues", {
+      const response = await fetch("http://localhost:8000/api/issues", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -124,6 +128,29 @@ export default function ReportPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by this browser.")
+      return
+    }
+
+    setGettingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData({
+          ...formData,
+          latitude: position.coords.latitude.toString(),
+          longitude: position.coords.longitude.toString(),
+        })
+        setGettingLocation(false)
+      },
+      (error) => {
+        setError("Unable to retrieve your location. Please enter manually.")
+        setGettingLocation(false)
+      },
+    )
   }
 
   return (
@@ -215,21 +242,64 @@ export default function ReportPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <Input
-                    id="location"
-                    name="location"
-                    type="text"
-                    placeholder="Street address or landmark"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className="pl-10"
-                    required
-                  />
+              {/* Replace the location input section with: */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Input
+                      id="address"
+                      name="address"
+                      type="text"
+                      placeholder="Street address or landmark"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="latitude">Latitude</Label>
+                    <Input
+                      id="latitude"
+                      name="latitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 40.7128"
+                      value={formData.latitude}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="longitude">Longitude</Label>
+                    <Input
+                      id="longitude"
+                      name="longitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g., -74.0060"
+                      value={formData.longitude}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={getCurrentLocation}
+                  className="w-full bg-transparent"
+                  disabled={gettingLocation}
+                >
+                  {gettingLocation ? "Getting Location..." : "Use Current Location"}
+                </Button>
               </div>
 
               <div className="space-y-2">
